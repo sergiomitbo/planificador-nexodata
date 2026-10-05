@@ -1,7 +1,9 @@
 package planificador;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,11 +46,38 @@ public class Main {
             System.exit(1);
         }
 
-        System.out.println("Fichero: " + fichero + " | algoritmo: " + algoritmo
-                + " | quantum: " + quantum + " | traza: " + traza);
+        List<Proceso> procesos;
+        try {
+            procesos = LectorProcesos.leer(fichero);
+        } catch (ErrorFormatoException e) {
+            System.err.println("Error en " + fichero + ": " + e.getMessage());
+            System.exit(1);
+            return;
+        } catch (IOException e) {
+            System.err.println("No he podido leer " + fichero + ": " + e.getMessage());
+            System.exit(1);
+            return;
+        }
 
-        // TODO (tareas 1 a 3): a partir de aquí, lee los procesos del fichero,
-        // simula el algoritmo o algoritmos pedidos y muestra los resultados.
-        // Cuando lo tengas, borra el println de arriba y este comentario.
+        List<Planificador> planificadores = new ArrayList<>();
+        if (algoritmo.equals("fcfs") || algoritmo.equals("todos")) {
+            planificadores.add(new PlanificadorFCFS());
+        }
+        if (algoritmo.equals("sjf") || algoritmo.equals("todos")) {
+            planificadores.add(new PlanificadorSJF());
+        }
+        if (algoritmo.equals("rr") || algoritmo.equals("todos")) {
+            if (quantum <= 0) {
+                System.err.println("El quantum debe ser mayor que cero: " + quantum);
+                System.exit(1);
+            }
+            planificadores.add(new PlanificadorRR(quantum));
+        }
+
+        // Cada simulación trabaja sobre copias: «procesos» no cambia entre algoritmos.
+        Informe informe = new Informe(System.out);
+        for (Planificador planificador : planificadores) {
+            informe.imprimir(planificador.simular(procesos), traza);
+        }
     }
 }
